@@ -1,18 +1,21 @@
 package lexer_test
 
 import (
+	"testing"
+
 	"monkey/lexer"
 	"monkey/token"
-	"testing"
 )
+
+type testExpect struct {
+	expectedType    token.TokenType
+	expectedLiteral string
+}
 
 func TestNextToken(t *testing.T) {
 	input := `=+(){},;`
 
-	tests := []struct {
-		expectedType    token.TokenType
-		expectedLiteral string
-	}{
+	tests := []testExpect{
 		{token.ASSIGN, "="},
 		{token.PLUS, "+"},
 		{token.LPAREN, "("},
@@ -25,24 +28,7 @@ func TestNextToken(t *testing.T) {
 	}
 
 	l := lexer.New(input)
-
-	for i, tt := range tests {
-		tok := l.NextToken()
-
-		if tok.Type != tt.expectedType {
-			t.Fatalf(
-				"tests[%d] - tokentype wrong. expexted=%q, got= %q",
-				i, tt.expectedType, tok.Type,
-			)
-		}
-
-		if tok.Literal != tt.expectedLiteral {
-			t.Fatalf(
-				"tests[%d] - literal wrong. expexted=%q, got= %q",
-				i, tt.expectedLiteral, tok.Literal,
-			)
-		}
-	}
+	assertInputTokens(t, l, tests)
 }
 
 func TestNextToken2(t *testing.T) {
@@ -56,10 +42,7 @@ func TestNextToken2(t *testing.T) {
 	let result = add(four, eleven);
 	`
 
-	tests := []struct {
-		expectedType    token.TokenType
-		expectedLiteral string
-	}{
+	tests := []testExpect{
 		{token.LET, "let"},
 		{token.IDENT, "four"},
 		{token.ASSIGN, "="},
@@ -106,12 +89,91 @@ func TestNextToken2(t *testing.T) {
 
 	l := lexer.New(input)
 
-	for i, tt := range tests {
-		tok := l.NextToken()
+	assertInputTokens(t, l, tests)
+}
+
+func TestNextTokenKeywords(t *testing.T) {
+	input := `let t = true;
+	let f = false;
+
+	if (t) {
+		return t;
+	} else {
+		return f;
+	}
+	`
+
+	tests := []testExpect{
+		{token.LET, "let"},
+		{token.IDENT, "t"},
+		{token.ASSIGN, "="},
+		{token.TRUE, "true"},
+		{token.SEMICOLON, ";"},
+
+		{token.LET, "let"},
+		{token.IDENT, "f"},
+		{token.ASSIGN, "="},
+		{token.FALSE, "false"},
+		{token.SEMICOLON, ";"},
+
+		{token.IF, "if"},
+		{token.LPAREN, "("},
+		{token.IDENT, "t"},
+		{token.RPAREN, ")"},
+		{token.LBRACE, "{"},
+		{token.RETURN, "return"},
+		{token.IDENT, "t"},
+		{token.SEMICOLON, ";"},
+		{token.RBRACE, "}"},
+		{token.ELSE, "else"},
+		{token.LBRACE, "{"},
+		{token.RETURN, "return"},
+		{token.IDENT, "f"},
+		{token.SEMICOLON, ";"},
+		{token.RBRACE, "}"},
+
+		{token.EOF, ""},
+	}
+
+	l := lexer.New(input)
+
+	assertInputTokens(t, l, tests)
+}
+
+func TestNextTokenOperators(t *testing.T) {
+	input := `!-/*5;
+	5 < 10 > 5;
+	`
+
+	l := lexer.New(input)
+	tests := []testExpect{
+		{token.BANG, "!"},
+		{token.MINUS, "-"},
+		{token.SLASH, "/"},
+		{token.ASTERISK, "*"},
+		{token.INT, "5"},
+		{token.SEMICOLON, ";"},
+
+		{token.INT, "5"},
+		{token.LT, "<"},
+		{token.INT, "10"},
+		{token.GT, ">"},
+		{token.INT, "5"},
+		{token.SEMICOLON, ";"},
+
+		{token.EOF, ""},
+	}
+
+	assertInputTokens(t, l, tests)
+}
+
+func assertInputTokens(t *testing.T, lexer *lexer.Lexer, expectations []testExpect) {
+	for i, tt := range expectations {
+		tok := lexer.NextToken()
 
 		if tok.Type != tt.expectedType {
 			t.Fatalf(
-				"tests[%d] - tokentype wrong. expexted=%q, got= %q",
+				"tests[%d] - token type wrong. expexted=%q, got= %q",
 				i, tt.expectedType, tok.Type,
 			)
 		}
