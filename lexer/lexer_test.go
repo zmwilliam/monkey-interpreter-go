@@ -144,8 +144,6 @@ func TestNextTokenOperators(t *testing.T) {
 	input := `!-/*5;
 	5 < 10 > 5;
 	`
-
-	l := lexer.New(input)
 	tests := []testExpect{
 		{token.BANG, "!"},
 		{token.MINUS, "-"},
@@ -163,6 +161,30 @@ func TestNextTokenOperators(t *testing.T) {
 
 		{token.EOF, ""},
 	}
+
+	l := lexer.New(input)
+
+	assertInputTokens(t, l, tests)
+}
+
+func TestNextTokenEqNotEq(t *testing.T) {
+	input := `10 == 10;
+	10 != 9;
+	`
+
+	tests := []testExpect{
+		{token.INT, "10"},
+		{token.EQ, "=="},
+		{token.INT, "10"},
+		{token.SEMICOLON, ";"},
+
+		{token.INT, "10"},
+		{token.NOT_EQ, "!="},
+		{token.INT, "9"},
+		{token.SEMICOLON, ";"},
+	}
+
+	l := lexer.New(input)
 
 	assertInputTokens(t, l, tests)
 }
